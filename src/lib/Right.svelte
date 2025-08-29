@@ -2,29 +2,29 @@
   import Plot1 from "./Plot1.svelte";
   import Plot2 from "./Plot2.svelte";
 
-  // --- NEW: accept prefill from Main and pass it to Plot1 as a prop ---
-  let { prefill = null as null | { id: number; title: string; hint: string } } = $props();
-  // --------------------------------------------------------------------
-
-
   let p1: InstanceType<typeof Plot1> | null = null;
   let p2: InstanceType<typeof Plot2> | null = null;
 
-  export function load(n: number) {
-    p1?.load(n);
-    p2?.load(n);
+  // Prefill from Main for Plot1
+  let { prefill = null as null | { id: number; title: string; hint: string },
+        selectedCatId = 0, selectedItemId = 0 
+  } = $props();
+  
+  // NOTE: load now accepts (categoryId, itemId)
+  export function load(catId: number, itemId: number) {
+    p1?.load(catId, itemId);
+    p2?.load(catId, itemId);
   }
 
   function reload() {
     p1?.reload();
     p2?.reload();
   }
-
 </script>
 
 <div class="flex flex-col gap-2 w-1/2 h-full bg-gray-100 p-2 border rounded-lg">
   <div class="flex items-center justify-between">
-    <div>Right</div>
+    <div>Cagerogy {selectedCatId} / Item {selectedItemId}</div>
     <button
       class="px-3 py-1 text-sm border rounded hover:bg-gray-50"
       onclick={reload}
@@ -35,7 +35,7 @@
   </div>
 
   <div class="flex gap-2 grow">
-    <Plot1 bind:this={p1} {prefill}/>
+    <Plot1 bind:this={p1} {prefill} />
     <Plot2 bind:this={p2} />
   </div>
 </div>

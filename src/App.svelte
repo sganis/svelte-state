@@ -4,7 +4,9 @@
 
   const routes = {
     '/': Main,
-    '/item/:id': Main,
+    '/categories': Main,
+    '/categories/:cat': Main,
+    '/categories/:cat/item/:id': Main
   };
 
 </script>

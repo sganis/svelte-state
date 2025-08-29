@@ -1,36 +1,82 @@
 <script lang="ts">
-    import Right from './Right.svelte';
-    import Left from './Left.svelte';
+  import Right from './Right.svelte';
+  import Left from './Left.svelte';
+  import { push } from 'svelte-spa-router';
+  import {
+    categories,
+    firstCategoryId,
+    findCategory,
+    firstItemId,
+    findItem
+  } from '../assets/catalog';
 
-    let { params } = $props();
-    const selected = $derived.by(() => {
-        const n = Number(params?.id ?? 0);
-        return Number.isFinite(n) && n >= 1 && n <= 20 ? n : 0;
-    });
+  // svelte-spa-router provides { params }
+  let { params } = $props();
 
-    // --- NEW: simple "loaded in Main" quick data (pretend this came from elsewhere) ---
-    // Keep it synchronous for testing; you could replace with a real fetch later.
-    const quickData = Array.from({ length: 20 }, (_, i) => {
-        const id = i + 1;
-        return { id, title: `Quick title #${id}`, hint: `prefill from Main for ${id}` };
-    });
+  // Selected CATEGORY id from URL, default to first
+  const selectedCatId = $derived.by(() => {
+    const c = Number(params?.cat ?? 0);
+    if (Number.isFinite(c) && findCategory(c)) return c;
+    return firstCategoryId();
+  });
 
-    // prefill for the currently selected item (or null)
-    const prefill = $derived.by(() => quickData.find(q => q.id === selected) ?? null);
-    // -------------------------------------------------------------------------------
+  const selectedCategory = $derived.by(() => findCategory(selectedCatId));
 
+  // Selected ITEM id from URL, default to first in the category
+  const selectedItemId = $derived.by(() => {
+    const idNum = Number(params?.id ?? 0);
+    if (Number.isFinite(idNum) && findItem(selectedCatId, idNum)) return idNum;
+    return firstItemId(selectedCategory);
+  });
 
-    let right: InstanceType<typeof Right> | null = null;
+  const selectedItem = $derived.by(() => findItem(selectedCatId, selectedItemId));
 
-    // Minimal, single effect: when route param changes, (re)load both plots
-    $effect(() => {
-        if (selected) 
-            right?.load(selected);
-    });
+  // Prefill (fast data from Main) for Plot1 – arrives immediately
+  const prefill = $derived.by(() =>
+    selectedItem
+      ? { id: selectedItem.id, title: `${selectedItem.name} (Cat ${selectedCatId})`, hint: 'prefill from Main' }
+      : null
+  );
 
+  let right: InstanceType<typeof Right> | null = null;
+
+  // route change -> trigger plots
+  $effect(() => {
+    if (selectedCategory && selectedItem) {
+      right?.load(selectedCatId, selectedItemId);
+    }
+  });
+
+  // --- NEW: dropdown handler ---
+  function onSelectCategory(catId: number) {
+    const cat = findCategory(catId);
+    const first = firstItemId(cat);
+    // Navigate so back/forward work and defaults are consistent
+    push(`/categories/${catId}/item/${first}`);
+  }
 </script>
 
-<div class="flex h-full w-full bg-gray-300 p-4 gap-4">
-  <Right bind:this={right} {prefill}/>
-  <Left {selected}  />
+
+ <div class="flex flex-col w-full h-full gap-2">
+    <div class="flex items-center justify-between gap-3">
+        <select
+            class="px-2 py-1 rounded border bg-white outline-0"
+            value={selectedCatId}
+            onchange={(e) => onSelectCategory(Number((e.currentTarget as HTMLSelectElement).value))}
+            aria-label="Select category"
+            title="Select category"
+        >
+        {#each categories as c}
+            <option value={c.id}>{c.name}</option>
+        {/each}
+        </select>
+        <div class="grow"></div>
+        <div class="text-2xl font-bold">Category {selectedCatId} / Item {selectedItemId}</div>
+    </div>
+    <div class="flex h-full w-full bg-gray-300 gap-4 min-h-0">
+        <Right bind:this={right} {prefill} {selectedCatId} {selectedItemId}/>
+        <Left {categories} {selectedCatId} {selectedItemId} />
+    </div>
 </div>
+
+
