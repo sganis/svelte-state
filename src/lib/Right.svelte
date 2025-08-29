@@ -2,6 +2,11 @@
   import Plot1 from "./Plot1.svelte";
   import Plot2 from "./Plot2.svelte";
 
+  // --- NEW: accept prefill from Main and pass it to Plot1 as a prop ---
+  let { prefill = null as null | { id: number; title: string; hint: string } } = $props();
+  // --------------------------------------------------------------------
+
+
   let p1: InstanceType<typeof Plot1> | null = null;
   let p2: InstanceType<typeof Plot2> | null = null;
 
@@ -30,7 +35,7 @@
   </div>
 
   <div class="flex gap-2 grow">
-    <Plot1 bind:this={p1} />
+    <Plot1 bind:this={p1} {prefill}/>
     <Plot2 bind:this={p2} />
   </div>
 </div>
